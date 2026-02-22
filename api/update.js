@@ -24,6 +24,21 @@ export default async function handler(req, res) {
       const playersStr = `${Players || 0}/${MaxPlayers || 12}`;
       const now = Math.floor(Date.now() / 1000);
 
+      // TÍNH TOÁN THỜI GIAN THEO UNIX SECONDS ĐỂ WEB TỰ GIẢM DẦN
+      let spawnSeconds = 0;
+      if (Time && Time !== "") {
+        let p = Time.split(":");
+        if (p.length === 3) {
+          spawnSeconds = parseInt(p[0]) * 3600 + parseInt(p[1]) * 60 + parseInt(p[2]);
+        }
+      }
+
+      // Lúc nào Boss Ra?
+      const spawnTimestamp = now + spawnSeconds;
+      
+      // Lúc nào Boss Mất? (Ra được 5 Phút = 300 giây là biến mất)
+      const expireTimestamp = spawnTimestamp + 300;
+
       const newEntry = {
         data: {
           Players: playersStr,
@@ -31,6 +46,8 @@ export default async function handler(req, res) {
           Time: Time || "00:00:00",
           JobId: JobId || "",
           Status: Status || "Unknown",
+          SpawnTime: spawnTimestamp,
+          ExpireTime: expireTimestamp
         },
         timestamp: now,
       };
@@ -48,9 +65,6 @@ export default async function handler(req, res) {
         }
       }
       if (!found) currentData.push(newEntry);
-
-      // Xóa các Server cũ (quá 2 tiếng = 7200s, hoặc các server rác)
-      currentData = currentData.filter((item) => now - item.timestamp < 7200);
 
       // Lưu ngược lại Database
       await kv.set("seaking_data", currentData);
