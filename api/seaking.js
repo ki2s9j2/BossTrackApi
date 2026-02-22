@@ -37,10 +37,12 @@ export default async function handler(req, res) {
         continue;
       }
 
-      // Filter out entries older than 5 minutes
-      if (entry.data && entry.data.ExpireTime && entry.data.ExpireTime < now) {
-        expiredKeys.push(key);
-        continue;
+      // Filter out entries older than 5 minutes past spawn time
+      if (entry.data && entry.data.SpawnTime) {
+        if (entry.data.SpawnTime + 300 < now) {
+            expiredKeys.push(key);
+            continue;
+        }
       }
 
       results.push(entry);

@@ -228,30 +228,41 @@
       }
 
       /* Join button */
-      .join-btn {
+      .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .join-btn, .jobId-btn {
         width: 100%;
-        padding: 8px 12px;
+        padding: 6px 10px;
         border-radius: var(--radius-sm);
         border: 1px solid var(--border-color);
         background: var(--bg-primary);
         color: var(--text-secondary);
         font-family: "JetBrains Mono", monospace;
-        font-size: 12px;
+        font-size: 11px;
         cursor: pointer;
         transition: all 0.1s;
         text-align: left;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
       }
 
-      .join-btn:hover {
+      .jobId-btn {
+        background: var(--bg-secondary);
+        border-style: dashed;
+      }
+
+      .join-btn:hover, .jobId-btn:hover {
         background: #2a2a2a;
         color: var(--text-primary);
         border-color: #444;
       }
 
-      .join-btn.copied {
+      .join-btn.copied, .jobId-btn.copied {
         background: rgba(105, 219, 124, 0.1);
         color: var(--accent-green);
         border-color: var(--accent-green);
@@ -469,12 +480,11 @@
             const jobId = d.JobId || "";
             const jobShort = jobId.substring(0, 8);
 
-            let subtext = "";
             if (!isAlive && d.SpawnTime) {
               const now = Math.floor(Date.now() / 1000);
               const diff = d.SpawnTime - now;
               if (diff > 0) {
-                subtext = `Remaining: ${Math.floor(diff / 60)}m ${diff % 60}s`;
+                subtext = `Remaining: <span class="countdown-eta" data-spawntime="${d.SpawnTime}">${Math.floor(diff / 60)}m ${diff % 60}s</span>`;
               } else {
                 subtext = "NOW";
               }
@@ -493,13 +503,18 @@
                 </div>
                 <div class="card-info">
                   <div class="info-row">
-                    <span>👥</span> <span class="info-value">${players}</span> | <span>🆔</span> <span class="info-value">${jobShort}</span>
+                    <span>👥</span> <span class="info-value">${players}</span>
                   </div>
                   ${subtext ? `<div class="info-row"><span>⏱</span> <span class="info-value">${subtext}</span></div>` : ""}
                 </div>
-                <button class="join-btn" onclick="copyScript(this, '${teleportScript.replace(/'/g, "\\'")}')" title="Click to copy join script">
-                  📋 Copy Script
-                </button>
+                <div class="action-buttons">
+                    <button class="join-btn" onclick="copyScript(this, '${teleportScript.replace(/'/g, "\\'")}')" title="Click to copy join script">
+                      <span>▶️ Auto Join</span> 
+                    </button>
+                    <button class="jobId-btn" onclick="copyScript(this, '${jobId}')" title="Click to copy raw JobId">
+                      <span>🆔 ${jobShort}</span><span>📋</span>
+                    </button>
+                </div>
               </div>`;
           });
 
@@ -554,13 +569,15 @@
           fetchData();
         }
 
-        // Update remaining times live
-        document.querySelectorAll(".boss-card.spawning").forEach((card) => {
-          const etaRow = card.querySelector(".info-value.spawn-eta");
-          if (etaRow && etaRow.parentElement) {
-            const label = etaRow.parentElement.querySelector(".info-label");
-            if (label && label.textContent === "Remaining") {
-              // recalc from data - handled on next full refresh
+        // Update remaining times live manually on UI (Live Countdown)
+        document.querySelectorAll(".countdown-eta").forEach((span) => {
+          const spawnTime = parseInt(span.getAttribute("data-spawntime"));
+          if (!isNaN(spawnTime)) {
+            const currentDiff = spawnTime - Math.floor(Date.now() / 1000);
+            if (currentDiff > 0) {
+              span.textContent = `${Math.floor(currentDiff / 60)}m ${currentDiff % 60}s`;
+            } else {
+              span.textContent = "NOW";
             }
           }
         });
