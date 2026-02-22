@@ -1,64 +1,64 @@
-import { kv } from '@vercel/kv';
+// api/seaking.js — GET endpoint for dashboard
+// Returns all active boss entries from Vercel KV
+import { kv } from "@vercel/kv";
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  
+  // CORS
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+
+  if (req.method === "OPTIONS") return res.status(200).end();
+
   try {
-    const data = await kv.get('seaking_data') || [];
+    // Get all active keys
+    const keys = await kv.smembers("boss:active_keys");
+    if (!keys || keys.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const results = [];
+    const expiredKeys = [];
     const now = Math.floor(Date.now() / 1000);
-    
-    let validData = [];
-    let hasChanges = false;
 
-    if (Array.isArray(data)) {
-      for (let item of data) {
-        let spawnTime = item?.data?.SpawnTime;
-        let expireTime = item?.data?.ExpireTime;
+    for (const key of keys) {
+      const raw = await kv.get(key);
+      if (!raw) {
+        expiredKeys.push(key);
+        continue;
+      }
 
-        // Xử lý dữ liệu định dạng cũ (Không có biến thời gian động)
-        if (!spawnTime || !expireTime) {
-          if (now - item.timestamp < 300) { // Giữ được 5 phút với dữ liệu cũ
-            validData.push(item);
-          } else {
-            hasChanges = true;
-          }
-          continue;
-        }
+      let entry;
+      try {
+        entry = typeof raw === "string" ? JSON.parse(raw) : raw;
+      } catch {
+        expiredKeys.push(key);
+        continue;
+      }
 
-        // ================= THUẬT TOÁN ĐIỀU CHỈNH THỜI GIAN THỰC TẾ =================
-        if (now >= expireTime) {
-          // BOSS NỞ ĐƯỢC 5 PHÚT -> ĐÃ CHẾT HOẶC MẤT TÍCH -> XOÁ KHỎI SERVER!
-          hasChanges = true;
-          continue;
-        }
+      // Filter out entries older than 5 minutes
+      if (entry.data && entry.data.ExpireTime && entry.data.ExpireTime < now) {
+        expiredKeys.push(key);
+        continue;
+      }
 
-        if (now >= spawnTime) {
-          // THỜI GIAN ĐÃ VỀ 0 -> BOSS ĐANG ĐỨNG LÙ LÙ TRÊN BIỂN
-          item.data.Time = "00:00:00";
-          item.data.Status = "Alive";
-          validData.push(item);
-          hasChanges = true; // Lưu lại trạng thái mới
-        } else {
-          // ĐANG ĐẾM NGƯỢC CHỜ LÊN MẶT NƯỚC -> Tính lại số giây và biến thành string
-          let remainSecs = spawnTime - now;
-          let h = Math.floor(remainSecs / 3600).toString().padStart(2, '0');
-          let m = Math.floor((remainSecs % 3600) / 60).toString().padStart(2, '0');
-          let s = Math.floor(remainSecs % 60).toString().padStart(2, '0');
-          
-          item.data.Time = `${h}:${m}:${s}`;
-          item.data.Status = "Spawning Soon";
-          validData.push(item);
-        }
+      results.push(entry);
+    }
+
+    // Clean up expired keys
+    if (expiredKeys.length > 0) {
+      for (const k of expiredKeys) {
+        await kv.srem("boss:active_keys", k);
       }
     }
 
-    // Nếu có dọn dẹp data (boss chết, boss hết hạn), UPDATE LẠI VÀO DATABASE MỘT LƯỢT
-    if (hasChanges) {
-      await kv.set('seaking_data', validData);
-    }
+    // Sort by timestamp descending (newest first)
+    results.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-    res.status(200).json(validData);
-  } catch (error) {
-    res.status(500).json({ error: "Lỗi đọc Database KV: " + error.message });
+    return res.status(200).json(results);
+  } catch (err) {
+    console.error("Seaking error:", err);
+    return res.status(500).json({ error: "Internal error" });
   }
 }

@@ -1,84 +1,39 @@
+// api/update.js — POST endpoint for Lua scripts
+// Stores boss data in Vercel KV with 5-minute TTL
 import { kv } from "@vercel/kv";
 
 export default async function handler(req, res) {
-  // Cấp quyền truy cập web (CORS)
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST")
+    return res.status(405).json({ error: "POST only" });
 
-  if (req.method === "POST") {
-    try {
-      const {
-        JobId,
-        Players,
-        MaxPlayers,
-        "Name Boss": NameBoss,
-        Time,
-        Status,
-      } = req.body;
-
-      const playersStr = `${Players || 0}/${MaxPlayers || 12}`;
-      const now = Math.floor(Date.now() / 1000);
-
-      // TÍNH TOÁN THỜI GIAN THEO UNIX SECONDS ĐỂ WEB TỰ GIẢM DẦN
-      let spawnSeconds = 0;
-      if (Time && Time !== "") {
-        let p = Time.split(":");
-        if (p.length === 3) {
-          spawnSeconds = parseInt(p[0]) * 3600 + parseInt(p[1]) * 60 + parseInt(p[2]);
-        }
-      }
-
-      // Lúc nào Boss Ra?
-      const spawnTimestamp = now + spawnSeconds;
-      
-      // Lúc nào Boss Mất? (Ra được 5 Phút = 300 giây là biến mất)
-      const expireTimestamp = spawnTimestamp + 300;
-
-      const newEntry = {
-        data: {
-          Players: playersStr,
-          "Name Boss": NameBoss || "SeaKing",
-          Time: Time || "00:00:00",
-          JobId: JobId || "",
-          Status: Status || "Unknown",
-          SpawnTime: spawnTimestamp,
-          ExpireTime: expireTimestamp
-        },
-        timestamp: now,
-      };
-
-      // Đọc dữ liệu cũ từ Vercel Redis KV
-      let currentData = (await kv.get("seaking_data")) || [];
-      if (!Array.isArray(currentData)) currentData = [];
-
-      let found = false;
-      for (let i = 0; i < currentData.length; i++) {
-        if (currentData[i]?.data?.JobId === JobId) {
-          currentData[i] = newEntry;
-          found = true;
-          break;
-        }
-      }
-      if (!found) currentData.push(newEntry);
-
-      // Lưu ngược lại Database
-      await kv.set("seaking_data", currentData);
-
-      return res
-        .status(200)
-        .json({ success: true, message: "Đã trinh sát Boss thành công!" });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Lỗi kết nối CSDL Vercel KV" });
+  try {
+    const data = req.body;
+    if (!data || !data.JobId) {
+      return res.status(400).json({ error: "Missing JobId" });
     }
-  } else {
-    return res
-      .status(405)
-      .json({ error: "Chỉ chấp nhận lệnh POST từ Script Lua" });
+
+    const now = Math.floor(Date.now() / 1000);
+    const entry = {
+      data: data,
+      timestamp: now,
+    };
+
+    // Store with JobId as key, auto-expire in 5 minutes
+    const key = `boss:${data.JobId}`;
+    await kv.set(key, JSON.stringify(entry), { ex: 300 });
+
+    // Also add to the list of active keys
+    await kv.sadd("boss:active_keys", key);
+
+    return res.status(200).json({ ok: true, key: key });
+  } catch (err) {
+    console.error("Update error:", err);
+    return res.status(500).json({ error: "Internal error" });
   }
 }

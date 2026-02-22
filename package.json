@@ -1,11 +1,8 @@
 {
-  "name": "roblox-boss-api",
-  "version": "1.0.0",
-  "description": "API theo dõi Boss King Legacy (Chạy trên Vercel)",
+  "name": "boss-track-api",
+  "version": "2.0.0",
+  "private": true,
   "dependencies": {
-    "@vercel/kv": "^3.0.0"
-  },
-  "engines": {
-    "node": "20.x"
+    "@vercel/kv": "^1.0.1"
   }
 }

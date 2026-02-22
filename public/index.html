@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Boss Tracker | King Legacy</title>
+    <meta
+      name="description"
+      content="Real-time boss spawn tracker for King Legacy - SeaKing & GhostShip"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg-primary: #121212;
+        --bg-secondary: #1e1e1e;
+        --border-color: #333333;
+        --text-primary: #e0e0e0;
+        --text-secondary: #a0a0a0;
+        --text-muted: #666666;
+        --accent-blue: #4dabf7;
+        --accent-green: #69db7c;
+        --accent-red: #ff6b6b;
+        --accent-yellow: #fcc419;
+        --radius: 8px;
+        --radius-sm: 4px;
+      }
+
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+        content: "";
+        position: fixed;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background:
+          radial-gradient(
+            ellipse at 20% 50%,
+            rgba(59, 130, 246, 0.06) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            ellipse at 80% 20%,
+            rgba(139, 92, 246, 0.05) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            ellipse at 50% 80%,
+            rgba(16, 185, 129, 0.04) 0%,
+            transparent 50%
+          );
+        animation: bgShift 20s ease-in-out infinite alternate;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      /* Header */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .header-title h1 {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .header-title .subtitle {
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      /* Status bar */
+      .status-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .status-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+
+      .status-pill .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent-green);
+      }
+
+      .status-pill .countdown {
+        font-family: "JetBrains Mono", monospace;
+        color: var(--accent-blue);
+        font-weight: 600;
+      }
+
+      /* Boss section */
+      .boss-section {
+        margin-bottom: 32px;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px dashed var(--border-color);
+      }
+
+      .section-title {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .section-count {
+        margin-left: auto;
+        font-size: 13px;
+        color: var(--text-muted);
+        background: var(--bg-secondary);
+        padding: 2px 8px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
+      }
+
+      /* List Layout */
+      .cards-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* List Item */
+      .boss-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        padding: 12px 16px;
+        display: grid;
+        grid-template-columns: 120px 100px 1fr 200px;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .boss-card.alive {
+        border-left: 4px solid var(--accent-red);
+      }
+
+      .boss-card.spawning {
+        border-left: 4px solid var(--accent-yellow);
+      }
+
+      /* List Item Columns */
+      .card-time {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .status-badge {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .status-badge.alive {
+        color: var(--accent-red);
+      }
+
+      .status-badge.spawning {
+        color: var(--accent-yellow);
+      }
+
+      .card-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .info-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+
+      .info-value {
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Join button */
+      .join-btn {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
+        background: var(--bg-primary);
+        color: var(--text-secondary);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.1s;
+        text-align: left;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .join-btn:hover {
+        background: #2a2a2a;
+        color: var(--text-primary);
+        border-color: #444;
+      }
+
+      .join-btn.copied {
+        background: rgba(105, 219, 124, 0.1);
+        color: var(--accent-green);
+        border-color: var(--accent-green);
+      }
+
+      /* Empty state */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-muted);
+      }
+
+      .empty-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.4;
+      }
+
+      .empty-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+      }
+
+      .empty-desc {
+        font-size: 13px;
+      }
+
+      .loading-msg {
+        text-align: center;
+        padding: 40px;
+        color: var(--text-muted);
+      }
+
+      /* Toast */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        padding: 10px 24px;
+        border-radius: 100px;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: var(--accent-green);
+        font-size: 13px;
+        font-weight: 600;
+        backdrop-filter: blur(20px);
+        z-index: 999;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+      }
+
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 16px;
+        }
+        .boss-card {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+      }
+
+      /* Fade-in animation */
+      .fade-in {
+        animation: fadeIn 0.4s ease forwards;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="header-title">
+          <h1>Boss Tracker</h1>
+          <div class="subtitle">King Legacy • Real-time Scout</div>
+        </div>
+        <div class="status-bar">
+          <div class="status-pill">
+            <div class="dot"></div>
+            <span>Live</span>
+          </div>
+          <div class="status-pill">
+            <span>Servers:</span>
+            <span class="countdown" id="serverCount">—</span>
+          </div>
+          <div class="status-pill">
+            <span>Refresh:</span>
+            <span class="countdown" id="refreshTimer">30s</span>
+          </div>
+          <div class="status-pill">
+            <span>Updated:</span>
+            <span class="countdown" id="lastUpdate">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="content">
+        <div class="loading-msg">Loading data...</div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast">📋 Copied to clipboard!</div>
+
+    <script>
+      const API_URL = "/api/seaking";
+      const REFRESH_INTERVAL = 30;
+      let countdown = REFRESH_INTERVAL;
+      let bossData = [];
+
+      // ===== Fetch Data =====
+      async function fetchData() {
+        try {
+          const res = await fetch(API_URL);
+          if (!res.ok) throw new Error("API error");
+          bossData = await res.json();
+          renderDashboard(bossData);
+          document.getElementById("serverCount").textContent = bossData.length;
+          document.getElementById("lastUpdate").textContent =
+            new Date().toLocaleTimeString("vi-VN");
+          countdown = REFRESH_INTERVAL;
+        } catch (err) {
+          console.error("Fetch error:", err);
+        }
+      }
+
+      // ===== Render Dashboard =====
+      function renderDashboard(data) {
+        const content = document.getElementById("content");
+
+        if (!data || data.length === 0) {
+          content.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">🔍</div>
+              <div class="empty-title">No boss data</div>
+              <div class="empty-desc">Servers are being scanned... data will appear soon.</div>
+            </div>`;
+          return;
+        }
+
+        // Group by boss name
+        const groups = {};
+        data.forEach((entry) => {
+          const name = entry.data?.["Name Boss"] || "Unknown";
+          if (!groups[name]) groups[name] = [];
+          groups[name].push(entry);
+        });
+
+        // Sort: Alive first, then by SpawnTime (lowest to highest)
+        for (const name in groups) {
+          groups[name].sort((a, b) => {
+            const aAlive = a.data?.Status === "Alive" ? 0 : 1;
+            const bAlive = b.data?.Status === "Alive" ? 0 : 1;
+            if (aAlive !== bAlive) return aAlive - bAlive;
+            
+            // Sort remaining Spawning by SpawnTime (ascending, lowest first = closest to spawn)
+            return (a.data?.SpawnTime || Infinity) - (b.data?.SpawnTime || Infinity);
+          });
+        }
+
+        const bossConfig = {
+          SeaKing: { icon: "🐙", cssClass: "seaking" },
+          GhostShip: { icon: "👻", cssClass: "ghostship" },
+        };
+
+        // Render order: SeaKing first
+        const orderedNames = ["SeaKing", "GhostShip"];
+        const allNames = Object.keys(groups);
+        allNames.forEach((n) => {
+          if (!orderedNames.includes(n)) orderedNames.push(n);
+        });
+
+        let html = "";
+        let cardIndex = 0;
+
+        orderedNames.forEach((name) => {
+          const entries = groups[name];
+          if (!entries || entries.length === 0) return;
+
+          const cfg = bossConfig[name] || { icon: "❓", cssClass: "seaking" };
+
+          html += `
+            <div class="boss-section">
+              <div class="section-header">
+                <div class="section-title">${name}</div>
+                <div class="section-count">${entries.length} server${entries.length > 1 ? "s" : ""}</div>
+              </div>
+              <div class="cards-grid">`;
+
+          entries.forEach((entry) => {
+            const d = entry.data;
+            const status = d.Status || "Unknown";
+            const isAlive = status === "Alive";
+            const statusClass = isAlive ? "alive" : "spawning";
+            const time = d.Time || "--:--:--";
+            const players = d.Players || "?/?";
+            const jobId = d.JobId || "";
+            const jobShort = jobId.substring(0, 8);
+
+            let subtext = "";
+            if (!isAlive && d.SpawnTime) {
+              const now = Math.floor(Date.now() / 1000);
+              const diff = d.SpawnTime - now;
+              if (diff > 0) {
+                subtext = `Remaining: ${Math.floor(diff / 60)}m ${diff % 60}s`;
+              } else {
+                subtext = "NOW";
+              }
+            } else if (d.SpawnTime) {
+              const spawnDate = new Date(d.SpawnTime * 1000);
+              subtext = `Detected: ${spawnDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+            }
+
+            const teleportScript = `game:GetService('TeleportService'):TeleportToPlaceInstance(4520749081,'${jobId}',game.Players.LocalPlayer)`;
+
+            html += `
+              <div class="boss-card ${statusClass}">
+                <div class="card-time">${time}</div>
+                <div class="status-badge ${statusClass}">
+                  ${isAlive ? "🔴 ALIVE" : "⏳ Spawning"}
+                </div>
+                <div class="card-info">
+                  <div class="info-row">
+                    <span>👥</span> <span class="info-value">${players}</span> | <span>🆔</span> <span class="info-value">${jobShort}</span>
+                  </div>
+                  ${subtext ? `<div class="info-row"><span>⏱</span> <span class="info-value">${subtext}</span></div>` : ""}
+                </div>
+                <button class="join-btn" onclick="copyScript(this, '${teleportScript.replace(/'/g, "\\'")}')" title="Click to copy join script">
+                  📋 Copy Script
+                </button>
+              </div>`;
+          });
+
+          html += `</div></div>`;
+        });
+
+        content.innerHTML = html;
+      }
+
+      // ===== Copy to clipboard =====
+      function copyScript(btn, script) {
+        navigator.clipboard
+          .writeText(script)
+          .then(() => {
+            btn.classList.add("copied");
+            btn.textContent = "✅ Copied!";
+            showToast();
+            setTimeout(() => {
+              btn.classList.remove("copied");
+              btn.textContent = "📋 Copy Script";
+            }, 2000);
+          })
+          .catch(() => {
+            // Fallback
+            const ta = document.createElement("textarea");
+            ta.value = script;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            btn.classList.add("copied");
+            btn.textContent = "✅ Copied!";
+            showToast();
+            setTimeout(() => {
+              btn.classList.remove("copied");
+              btn.textContent = "📋 Copy Script";
+            }, 2000);
+          });
+      }
+
+      function showToast() {
+        const t = document.getElementById("toast");
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2000);
+      }
+
+      // ===== Countdown timer =====
+      setInterval(() => {
+        countdown--;
+        document.getElementById("refreshTimer").textContent = countdown + "s";
+        if (countdown <= 0) {
+          fetchData();
+        }
+
+        // Update remaining times live
+        document.querySelectorAll(".boss-card.spawning").forEach((card) => {
+          const etaRow = card.querySelector(".info-value.spawn-eta");
+          if (etaRow && etaRow.parentElement) {
+            const label = etaRow.parentElement.querySelector(".info-label");
+            if (label && label.textContent === "Remaining") {
+              // recalc from data - handled on next full refresh
+            }
+          }
+        });
+      }, 1000);
+
+      // ===== Init =====
+      fetchData();
+    </script>
+  </body>
+</html>
