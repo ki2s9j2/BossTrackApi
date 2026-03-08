@@ -2532,47 +2532,95 @@
 
         /* ========== MOBILE LANDSCAPE FIX ========== */
         @media screen and (max-height: 500px) and (orientation: landscape) {
+            /* Push phase2 content to the bottom so letter has room above */
+            #phase2 {
+                align-items: flex-end !important;
+                padding-bottom: 10px !important;
+            }
+
+            /* Shrink the envelope significantly */
             .envelope-wrapper {
-                width: min(55vw, 370px) !important;
-                margin-top: 5px !important;
+                width: min(40vw, 280px) !important;
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
             }
             .envelope2 {
                 width: 100% !important;
+                height: min(30vw, 130px) !important;
             }
+            .envelope2::before {
+                border-top-width: min(15vw, 70px) !important;
+                border-right-width: min(20vw, 140px) !important;
+                border-left-width: min(20vw, 140px) !important;
+            }
+            .envelope2::after {
+                border-top-width: min(15vw, 70px) !important;
+                border-right-width: min(20vw, 140px) !important;
+                border-bottom-width: min(12vw, 50px) !important;
+                border-left-width: min(20vw, 140px) !important;
+            }
+
+            /* When flap opens, letter slides WAY up above the small envelope */
             .flap .env-letter {
-                bottom: min(55vw, 200px) !important;
-                max-height: 250% !important;
+                bottom: min(30vw, 130px) !important;
+                max-height: 400% !important;
                 height: auto !important;
-                padding: 12px 10px 25px !important;
+                width: 85% !important;
+                padding: 10px 10px 20px !important;
                 overflow-y: auto !important;
             }
             .env-letter .text {
-                font-size: 13px !important;
-                line-height: 1.6 !important;
+                font-size: 12px !important;
+                line-height: 1.5 !important;
             }
+
+            /* When letter expands, make it fixed and fill the screen */
             .env-letter.expanded {
-                width: min(95vw, 500px) !important;
-                height: min(90vh, 400px) !important;
-                padding: 15px 12px 30px !important;
+                position: fixed !important;
+                left: 50% !important;
+                top: 50% !important;
+                bottom: auto !important;
+                transform: translate(-50%, -50%) !important;
+                width: 90vw !important;
+                height: 85vh !important;
+                max-height: 85vh !important;
+                padding: 12px 10px 25px !important;
+                z-index: 99999 !important;
             }
             .env-letter.expanded .text {
-                font-size: 14px !important;
+                font-size: 13px !important;
             }
+
+            /* Smaller seal */
             .seal {
-                width: min(14vw, 55px) !important;
-                height: min(14vw, 55px) !important;
-            }
-            .phase2-hint {
+                width: min(12vw, 45px) !important;
+                height: min(12vw, 45px) !important;
                 font-size: 14px !important;
-                margin-top: 5px !important;
             }
+
+            /* Smaller flowers */
+            .env-flower {
+                font-size: clamp(25px, 6vw, 50px) !important;
+            }
+
+            .phase2-hint {
+                font-size: 12px !important;
+                margin-top: 3px !important;
+            }
+
+            /* Phase 1 adjustments */
             #phase1 {
-                padding-top: 10px !important;
+                padding-top: 5px !important;
             }
             .intro-title {
-                font-size: clamp(40px, 12vw, 60px) !important;
+                font-size: clamp(35px, 10vw, 50px) !important;
             }
             .intro-badge, .intro-sub, .intro-hint {
-                font-size: 14px !important;
+                font-size: 13px !important;
+            }
+
+            /* Garden - shrink to leave room */
+            #garden {
+                max-height: 25vh !important;
             }
         }
