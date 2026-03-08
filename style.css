@@ -1832,9 +1832,9 @@
         .flap .env-letter {
             opacity: 1;
             /* SHOW when flap opens */
-            bottom: min(45vw, 160px);
+            bottom: min(50vw, 180px);
             height: auto;
-            max-height: 140%;
+            max-height: 200%;
             /* Tall enough to read */
             padding-bottom: 30px;
             transition-delay: 1s;
@@ -2528,4 +2528,51 @@
         /* ========== HIDDEN UTILITY ========== */
         .hidden {
             display: none !important;
+        }
+
+        /* ========== MOBILE LANDSCAPE FIX ========== */
+        @media screen and (max-height: 500px) and (orientation: landscape) {
+            .envelope-wrapper {
+                width: min(55vw, 370px) !important;
+                margin-top: 5px !important;
+            }
+            .envelope2 {
+                width: 100% !important;
+            }
+            .flap .env-letter {
+                bottom: min(55vw, 200px) !important;
+                max-height: 250% !important;
+                height: auto !important;
+                padding: 12px 10px 25px !important;
+                overflow-y: auto !important;
+            }
+            .env-letter .text {
+                font-size: 13px !important;
+                line-height: 1.6 !important;
+            }
+            .env-letter.expanded {
+                width: min(95vw, 500px) !important;
+                height: min(90vh, 400px) !important;
+                padding: 15px 12px 30px !important;
+            }
+            .env-letter.expanded .text {
+                font-size: 14px !important;
+            }
+            .seal {
+                width: min(14vw, 55px) !important;
+                height: min(14vw, 55px) !important;
+            }
+            .phase2-hint {
+                font-size: 14px !important;
+                margin-top: 5px !important;
+            }
+            #phase1 {
+                padding-top: 10px !important;
+            }
+            .intro-title {
+                font-size: clamp(40px, 12vw, 60px) !important;
+            }
+            .intro-badge, .intro-sub, .intro-hint {
+                font-size: 14px !important;
+            }
         }
